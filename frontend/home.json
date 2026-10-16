@@ -1,0 +1,65 @@
+[
+  {
+    "id": "living",
+    "name": "Salon & yemek",
+    "x": -3,
+    "z": -2,
+    "width": 6,
+    "depth": 6,
+    "floor": "oak"
+  },
+  {
+    "id": "kitchen",
+    "name": "Mutfak",
+    "x": 3,
+    "z": -3,
+    "width": 6,
+    "depth": 4,
+    "floor": "terrazzo"
+  },
+  {
+    "id": "hall",
+    "name": "Antre & koridor",
+    "x": 3,
+    "z": 0,
+    "width": 6,
+    "depth": 2,
+    "floor": "oak"
+  },
+  {
+    "id": "bedroom",
+    "name": "Yatak odası",
+    "x": -4,
+    "z": 3,
+    "width": 4,
+    "depth": 4,
+    "floor": "walnut"
+  },
+  {
+    "id": "study",
+    "name": "Çalışma & misafir",
+    "x": 0,
+    "z": 3,
+    "width": 4,
+    "depth": 4,
+    "floor": "oak"
+  },
+  {
+    "id": "bath",
+    "name": "Banyo",
+    "x": 3,
+    "z": 3,
+    "width": 2,
+    "depth": 4,
+    "floor": "terrazzo"
+  },
+  {
+    "id": "balcony",
+    "name": "Balkon",
+    "x": 5,
+    "z": 3,
+    "width": 2,
+    "depth": 4,
+    "floor": "concrete"
+  }
+]
