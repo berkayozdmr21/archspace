@@ -1,0 +1,21 @@
+import {it,expect} from 'vitest';
+import {CATALOG,preset,validDesign,extent,place,fitRoom,total,overlapping,ROOMS,housePlace,upgradeHome,zoneAt} from './design';
+it('contains forty-four distinct furniture types',()=>{expect(CATALOG).toHaveLength(44);expect(new Set(CATALOG.map(x=>x.id)).size).toBe(44);});
+it('accepts all three initial layouts',()=>{for(const p of ['Nordic','Japandi','Gallery'])expect(validDesign(preset(p))).not.toBeNull();});
+it('rotates footprint dimensions with the furniture',()=>{const sofa={...preset().items[0],rotation:90};expect(extent(sofa).w).toBeCloseTo(.95,8);expect(extent(sofa).d).toBeCloseTo(2.4,8);});
+it('clamps dragging to the room boundaries',()=>{const d=preset(),i=place(d.items[0],d.room,100,-100);expect(Math.abs(i.x)+extent(i).w/2).toBeLessThan(d.room.width/2);expect(Math.abs(i.z)+extent(i).d/2).toBeLessThan(d.room.depth/2);});
+it('snaps positions to a 25 cm grid',()=>{const d=preset(),i=place(d.items[0],d.room,.37,.63,true);expect(i.x).toBe(.25);expect(i.z).toBe(.75);});
+it('refits a layout after shrinking the room',()=>{const d=preset();delete d.layout;delete d.finishes;d.items=[{...d.items[0],x:0,z:0}];d.room.width=3;d.room.depth=3;expect(validDesign(fitRoom(d))).not.toBeNull();});
+it('rejects duplicate ids and unknown furniture',()=>{const d=preset();d.items.push({...d.items[0]});expect(validDesign(d)).toBeNull();d.items.pop();d.items[0].type='unknown';expect(validDesign(d)).toBeNull();});
+it('rejects out-of-room, NaN and excessive scale imports',()=>{for(const patch of [{x:100},{scale:2},{z:NaN}]){const d=preset();Object.assign(d.items[0],patch);expect(validDesign(d)).toBeNull();}});
+it('rejects hostile colors and strips extra imported fields',()=>{const d=preset();d.room.wall='url(javascript:alert(1))';expect(validDesign(d)).toBeNull();const valid=preset();valid.script='bad';expect(validDesign(valid).script).toBeUndefined();});
+it('counts furniture independently of visual scale',()=>{const d=preset(),expected=d.items.reduce((n,i)=>n+CATALOG.find(m=>m.id===i.type).price,0);expect(total(d)).toBe(expected);});
+it('allows rugs beneath furniture but detects furniture overlaps',()=>{const d=preset();expect(overlapping(d,'coffee-1')).toBe(false);d.items[0].x=d.items.find(i=>i.id==='coffee-1').x;d.items[0].z=d.items.find(i=>i.id==='coffee-1').z;expect(overlapping(d,'coffee-1')).toBe(true);});
+it('enforces the house object limit',()=>{const d=preset();d.items=Array.from({length:161},(_,i)=>({...d.items[0],id:String(i)}));expect(validDesign(d)).toBeNull();});
+
+it('keeps furniture footprints inside their individual rooms',()=>{const d=preset();for(const i of d.items){const r=zoneAt(i.x,i.z),e=extent(i);expect(Math.abs(i.x-r.x)+e.w/2).toBeLessThanOrEqual(r.width/2);expect(Math.abs(i.z-r.z)+e.d/2).toBeLessThanOrEqual(r.depth/2);}});
+it('places a selected piece in the balcony',()=>{const d=preset(),i=housePlace({...d.items[0],type:'bistro'},d,5,3,false,'balcony');expect(zoneAt(i.x,i.z).id).toBe('balcony');});
+it('rejects a footprint straddling an internal partition',()=>{const d=preset();d.items[0].x=-.1;expect(validDesign(d)).toBeNull();});
+it('round-trips individual room finishes',()=>{const d=preset();d.finishes.bath={floor:'concrete',wall:'#89968a'};expect(validDesign(JSON.parse(JSON.stringify(d))).finishes.bath).toEqual(d.finishes.bath);d.finishes.bath.wall='red';expect(validDesign(d)).toBeNull();});
+it('retains old furniture when upgrading a single-room draft',()=>{const d=preset();delete d.layout;delete d.finishes;d.items=[{...d.items[0],x:0,z:0}];d.room.width=6;d.room.depth=5;const home=upgradeHome(d);expect(home.layout).toBe('home');expect(home.items.some(i=>i.type==='sofa')).toBe(true);expect(validDesign(home)).not.toBeNull();});
+it('rejects malformed room finishes without throwing',()=>{const d=preset();d.finishes={bath:null};expect(validDesign(d)).toBeNull();});

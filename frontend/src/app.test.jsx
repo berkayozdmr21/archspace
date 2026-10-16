@@ -1,0 +1,18 @@
+import React from 'react';
+import {it,expect,vi,beforeEach,afterEach} from 'vitest';
+import {render,screen,fireEvent,cleanup} from '@testing-library/react';
+import {App} from './main';
+import {preset} from './design';
+vi.mock('./RoomScene',()=>({default:()=> <div data-testid="room-scene">Room scene</div>}));
+vi.mock('gsap',()=>({default:{context:()=>({revert(){}})}}));
+vi.mock('./design',async original=>({...await original(),api:vi.fn(async path=>path==='/projects'?[]:{status:'ready'})}));
+beforeEach(()=>localStorage.clear());
+afterEach(()=>cleanup());
+it('adds furniture and reverses it with undo',async()=>{render(<App/>);await screen.findByTestId('room-scene');fireEvent.click(screen.getByRole('button',{name:'Forma Sofa ekle'}));expect(screen.getByText(`${preset().items.length+1} parça · Fiyatlar kurgusaldır.`)).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'Geri al'}));expect(screen.getByText(`${preset().items.length} parça · Fiyatlar kurgusaldır.`)).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'İleri al'}));expect(screen.getByText(`${preset().items.length+1} parça · Fiyatlar kurgusaldır.`)).toBeTruthy();});
+it('filters the catalog by search',async()=>{render(<App/>);await screen.findByTestId('room-scene');fireEvent.change(screen.getByLabelText('Mobilya ara'),{target:{value:'Ficus'}});expect(screen.getByRole('button',{name:'Ficus / Clay ekle'})).toBeTruthy();expect(screen.queryByRole('button',{name:'Forma Sofa ekle'})).toBeNull();});
+it('switches to an editable floor plan',async()=>{render(<App/>);await screen.findByTestId('room-scene');fireEvent.click(screen.getByRole('button',{name:'2D Plan',exact:true}));expect(screen.getByRole('img',{name:'Evin düzenlenebilir üstten planı'})).toBeTruthy();});
+it('selects a different room and offers its material controls',async()=>{render(<App/>);await screen.findByTestId('room-scene');fireEvent.change(screen.getByLabelText('Düzenlenecek oda'),{target:{value:'balcony'}});expect(screen.getByRole('button',{name:'Balkon 8 m²'})).toBeTruthy();expect(screen.getByRole('slider',{name:'Tavan yüksekliği'})).toBeTruthy();});
+it('adds a kitchen object to the selected kitchen',async()=>{render(<App/>);await screen.findByTestId('room-scene');fireEvent.change(screen.getByLabelText('Düzenlenecek oda'),{target:{value:'kitchen'}});fireEvent.click(screen.getByRole('button',{name:'Steel Refrigerator ekle'}));expect(screen.getByRole('spinbutton',{name:'X konumu'}).value).toBe('3.00');});
+it('expands the whole-house working area',async()=>{render(<App/>);await screen.findByTestId('room-scene');fireEvent.click(screen.getByRole('button',{name:'Geniş çalışma alanı'}));expect(document.querySelector('.wide-home')).toBeTruthy();});
+it('deletes the selected furniture',async()=>{render(<App/>);await screen.findByTestId('room-scene');fireEvent.click(screen.getByRole('button',{name:'Seçili mobilyayı sil'}));expect(screen.getByText(`${preset().items.length-1} parça · Fiyatlar kurgusaldır.`)).toBeTruthy();});
+it('backs up and upgrades an existing single-room browser draft',async()=>{const old=preset();delete old.layout;delete old.finishes;old.room.width=6;old.room.depth=5;old.items=[{...old.items[0],x:0,z:0}];localStorage.setItem('archspace-draft',JSON.stringify(old));render(<App/>);await screen.findByTestId('room-scene');expect(screen.getByText('12.0 × 10.0 m')).toBeTruthy();expect(JSON.parse(localStorage.getItem('archspace-legacy-backup')).room.width).toBe(6);});
